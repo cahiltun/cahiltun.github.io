@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Critical Value Calculator</title>
+  <style>
+    body { font-family: Arial; max-width: 600px; margin: 40px auto; }
+    input, button { margin: 5px 0; padding: 8px; width: 100%; }
+    button { cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<h2>Critical Value Calculator</h2>
+
+<label>Alpha (FWER):</label>
+<input type="number" id="alpha" value="0.05" step="0.001">
+
+<label>Rho (correlation):</label>
+<input type="number" id="rho" value="0.2" step="0.01">
+
+<label>n (number of tests):</label>
+<input type="number" id="n" value="100">
+
+<button onclick="compute()">Compute Critical Value</button>
+
+<p id="status"></p>
+<p id="output"></p>
+
+<script>
+
+// Standard normal PDF
+function phi(x) {
+  return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+}
+
+// Normal CDF (approximation)
+function Phi(x) {
+  let t = 1 / (1 + 0.2316419 * Math.abs(x));
+  let d = 0.3989423 * Math.exp(-x * x / 2);
+  let prob = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+  if (x > 0) prob = 1 - prob;
+  return prob;
+}
+
+// Folded normal CDF
+function foldedCDF(c, mu, sigma) {
+  return Phi((c - mu)/sigma) - Phi((-c - mu)/sigma);
+}
+
+// Numerical integration over [-6, 6]
+function integral(c, rho, n) {
+  let a = -6, b = 6;
+  let steps = 300;
+  let h = (b - a) / steps;
+
+  let sum = 0;
+
+  for (let i = 0; i <= steps; i++) {
+    let z = a + i * h;
+
+    let mu = Math.sqrt(rho) * z;
+    let sigma = Math.sqrt(1 - rho);
+
+    let psi = foldedCDF(c, mu, sigma);
+    let integrand = Math.pow(psi, n) * phi(z);
+
+    if (i === 0 || i === steps) sum += integrand;
+    else sum += 2 * integrand;
+  }
+
+  return (h / 2) * sum;
+}
+
+// Root finding (bisection)
+function findCritical(alpha, rho, n) {
+  let low = 0;
+  let high = 10;
+
+  for (let iter = 0; iter < 40; iter++) {
+    let mid = (low + high) / 2;
+
+    let val = 1 - integral(mid, rho, n);
+
+    if (val > alpha) {
+      high = mid;
+    } else {
+      low = mid;
+    }
+  }
+
+  return (low + high) / 2;
+}
+
+// Main compute function
+function compute() {
+  let alpha = parseFloat(document.getElementById("alpha").value);
+  let rho = parseFloat(document.getElementById("rho").value);
+  let n = parseInt(document.getElementById("n").value);
+
+  document.getElementById("status").innerText = "Computing... please wait";
+
+  setTimeout(() => {
+    let c = findCritical(alpha, rho, n);
+
+    document.getElementById("status").innerText = "";
+    document.getElementById("output").innerText =
+      "Critical value: " + c.toFixed(5);
+  }, 50);
+}
+
+</script>
+
+</body>
+</html>
