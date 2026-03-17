@@ -90,7 +90,37 @@ function findCritical(alpha, rho, n) {
 
   return (low + high) / 2;
 }
+  
+function findCritical(alpha, rho, n) {
+  let low = 0;
+  let high = 2;
 
+  // 🔥 Expand upper bound until we bracket the root
+  while (1 - integral(high, rho, n) > alpha) {
+    high *= 2;
+
+    // safety cap
+    if (high > 100) {
+      console.warn("Upper bound too large—something may be wrong.");
+      break;
+    }
+  }
+
+  // Bisection
+  for (let iter = 0; iter < 50; iter++) {
+    let mid = (low + high) / 2;
+    let val = 1 - integral(mid, rho, n);
+
+    if (val > alpha) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+
+  return (low + high) / 2;
+}
+  
 // Main compute function
 function compute() {
   let alpha = parseFloat(document.getElementById("alpha").value);
