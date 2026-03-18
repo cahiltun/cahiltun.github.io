@@ -95,7 +95,7 @@ function findCritical(alpha, rho, n) {
   let low = 0;
   let high = 2;
 
-  // 🔥 Expand upper bound until we bracket the root
+  // Expand upper bound until we bracket the root
   while (1 - integral(high, rho, n) > alpha) {
     high *= 2;
 
